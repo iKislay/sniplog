@@ -18,7 +18,7 @@ npm install sniplog-sdk
 const express = require('express');
 const SnipLog = require('sniplog-sdk');
 
-const app = express(); //todo
+const app = express(); 
 
 // Initialize SnipLog
 const sniplog = new SnipLog({
