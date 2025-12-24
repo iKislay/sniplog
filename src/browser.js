@@ -10,7 +10,7 @@
 */
 
 ;(function (global) {
-	const DEFAULT_ENDPOINT = 'http://localhost:3000/api/errors';
+	const DEFAULT_ENDPOINT = 'http://localhost:3001/api/errors';
 
 	function uuidv4() {
 		// simple UUID (RFC4122 v4-like)

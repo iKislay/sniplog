@@ -13,16 +13,15 @@ app.use(express.json());
 
 // Initialize SnipLog
 const sniplog = new SnipLog({
-  endpoint: 'http://localhost:3000/api/errors',
-  projectKey: 'dev-project-key',
+  endpoint: 'http://localhost:3001/api/errors',
+  projectKey: 'sk_gj1gtqv7f_mjjvjlh3',
   autoCaptureExceptions: false, // Disabled to prevent conflicts - enable if needed
   timeout: 5000,
   // Optional: Discord webhook for real-time error notifications
-  discordWebhook: 'https://discord.com/api/webhooks/1406600399062040626/ivd2H26Igxsoat4qk7y3qRYsSQRhzMHhzTpXoKE8MnBYcawh5AMYyf9OORYGvznyg4La'
 });
 
 // Add request middleware (optional - adds req.sniplog helper)
-app.use(sniplog.requestMiddleware());
+app.use(sniplog.requestMiddleware());6
 
 // Your routes
 app.get('/', (req, res) => {

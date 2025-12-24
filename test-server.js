@@ -8,7 +8,7 @@ app.use(express.json());
 
 console.log('2. Creating SnipLog instance...');
 const sniplog = new SnipLog({
-  endpoint: 'http://localhost:3000/api/errors',
+  endpoint: 'http://localhost:3001/api/errors',
   projectKey: 'dev-project-key',
   autoCaptureExceptions: false,  // Disable for testing
   timeout: 5000

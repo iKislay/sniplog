@@ -19,7 +19,7 @@ const os = require('os');
 
 class SnipLog {
   constructor(config = {}) {
-    this.endpoint = config.endpoint || 'http://localhost:3000/api/errors';
+    this.endpoint = config.endpoint || 'http://localhost:3001/api/errors';
     this.projectKey = config.projectKey || '';
     this.webhookUrl = config.webhookUrl || config.discordWebhook || ''; // Discord webhook URL
     this.sessionId = this._generateSessionId();
