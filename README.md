@@ -279,6 +279,14 @@ cd your-express-app
 npm link sniplog-sdk
 ```
 
+## Contributing
+
+We welcome contributions! If you'd like to improve the SDK, please open an issue or submit a pull request.
+
+For details, see our [CONTRIBUTING.md](./CONTRIBUTING.md) guide.
+
+Thanks for helping make SnipLog better!
+
 ---
 
 ## License
