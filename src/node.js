@@ -25,7 +25,7 @@ class SnipLog {
     this.sessionId = this._generateSessionId();
     this.enabled = config.enabled !== false;
     this.timeout = config.timeout || 5000;
-    
+
     // Auto-capture process-level errors
     if (config.autoCaptureExceptions !== false) {
       this._attachGlobalHandlers();
@@ -34,6 +34,42 @@ class SnipLog {
 
   _generateSessionId() {
     return crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
+  }
+
+  /**
+   * Sanitize sensitive data from objects before sending to backend
+   * @param {any} data - Data to sanitize
+   * @param {number} depth - Current recursion depth
+   * @returns {any} Sanitized data
+   */
+  _sanitizeData(data, depth = 0) {
+    const MAX_DEPTH = 10;
+    const SENSITIVE_KEYS = /^(password|passwd|pwd|secret|token|apikey|api_key|api-key|authorization|auth|credential|credit.?card|card.?number|cvv|cvc|ssn|social.?security|private.?key|access.?token|refresh.?token|bearer|session.?id|cookie)$/i;
+
+    // Prevent infinite recursion
+    if (depth > MAX_DEPTH) return '[MAX_DEPTH_EXCEEDED]';
+
+    // Handle null/undefined
+    if (data == null) return data;
+
+    // Handle primitives
+    if (typeof data !== 'object') return data;
+
+    // Handle arrays
+    if (Array.isArray(data)) {
+      return data.map(item => this._sanitizeData(item, depth + 1));
+    }
+
+    // Handle objects
+    const sanitized = {};
+    for (const key of Object.keys(data)) {
+      if (SENSITIVE_KEYS.test(key)) {
+        sanitized[key] = '[REDACTED]';
+      } else {
+        sanitized[key] = this._sanitizeData(data[key], depth + 1);
+      }
+    }
+    return sanitized;
   }
 
   _attachGlobalHandlers() {
@@ -84,17 +120,18 @@ class SnipLog {
   }
 
   _buildPayload(error, metadata = {}) {
+    const sanitizedMetadata = this._sanitizeData(metadata);
     return {
       message: error.message || 'Unknown error',
       stack: error.stack || '',
-      url: metadata.url || '',
+      url: sanitizedMetadata.url || '',
       line: this._extractLineNumber(error),
       column: this._extractColumnNumber(error),
       browser: this._getSystemInfo(),
       device: 'server',
       sessionId: this.sessionId,
       metadata: {
-        ...metadata,
+        ...sanitizedMetadata,
         errorName: error.name,
         hostname: os.hostname(),
         pid: process.pid
@@ -145,7 +182,7 @@ class SnipLog {
 
     const req = client.request(options, (res) => {
       // Consume response to free up memory
-      res.on('data', () => {});
+      res.on('data', () => { });
       res.on('end', () => {
         if (res.statusCode >= 400) {
           console.warn(`[SnipLog] Error reporting failed with status ${res.statusCode}`);
@@ -198,7 +235,7 @@ class SnipLog {
       };
 
       const req = client.request(options, (res) => {
-        res.on('data', () => {});
+        res.on('data', () => { });
         res.on('end', () => {
           if (res.statusCode >= 400) {
             console.warn(`[SnipLog] Discord webhook failed with status ${res.statusCode}`);
@@ -230,34 +267,34 @@ class SnipLog {
     const emoji = payload.metadata?.type === 'expressError' ? '🚨' : '⚠️';
     const errorType = payload.metadata?.type || 'Error';
     const timestamp = new Date(payload.ts).toLocaleString();
-    
+
     let message = `${emoji} **${errorType}**: ${payload.message}\n`;
     message += `📅 **Time**: ${timestamp}\n`;
     message += `🔗 **URL**: ${payload.url || 'N/A'}\n`;
-    
+
     if (payload.metadata?.method) {
       message += `📍 **Method**: ${payload.metadata.method}\n`;
     }
-    
+
     if (payload.metadata?.hostname) {
       message += `💻 **Host**: ${payload.metadata.hostname}\n`;
     }
-    
+
     if (payload.metadata?.userId) {
       message += `👤 **User**: ${payload.metadata.userId}\n`;
     }
-    
+
     // Add stack trace (truncated for Discord's limit)
     if (payload.stack) {
       const stackLines = payload.stack.split('\n').slice(0, 5).join('\n');
       message += `\n\`\`\`\n${stackLines}\n\`\`\``;
     }
-    
+
     // Discord has a 2000 character limit
     if (message.length > 1900) {
       message = message.substring(0, 1900) + '\n... (truncated)';
     }
-    
+
     return message;
   }
 
@@ -271,7 +308,7 @@ class SnipLog {
   errorMiddleware() {
     const self = this;
     return function sniplogErrorHandler(err, req, res, next) {
-      // Capture the error
+      // Capture the error with sanitized request data
       self.captureError(err, {
         type: 'expressError',
         method: req.method,
@@ -279,9 +316,9 @@ class SnipLog {
         ip: req.ip || req.connection.remoteAddress,
         userAgent: req.get('user-agent'),
         userId: req.user ? req.user.id : undefined,
-        body: req.body,
-        query: req.query,
-        params: req.params
+        body: self._sanitizeData(req.body),
+        query: self._sanitizeData(req.query),
+        params: self._sanitizeData(req.params)
       });
 
       // Pass error to next error handler

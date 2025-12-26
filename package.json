@@ -1,5 +1,5 @@
 {
-  "name": "sniplog-sdk",
+  "name": "sniplog",
   "version": "1.0.0",
   "description": "SnipLog SDK for error tracking - supports both Node.js/Express backend and browser frontend",
   "main": "src/index.js",
@@ -13,7 +13,7 @@
     "express-middleware",
     "error-monitoring"
   ],
-  "author": "",
+  "author": "ikislay, 0xgajendra",
   "license": "MIT",
   "files": [
     "src/index.js",
@@ -31,5 +31,13 @@
   },
   "devDependencies": {
     "express": "^4.18.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iKislay/sniplog.git"
+  },
+  "bugs": {
+    "url": "https://github.com/iKislay/sniplog/issues"
+  },
+  "homepage": "https://github.com/iKislay/sniplog#readme"
 }
