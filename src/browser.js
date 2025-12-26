@@ -9,7 +9,7 @@
 	The SDK captures: window.onerror, unhandledrejection, and console.error (best-effort)
 */
 
-;(function (global) {
+; (function (global) {
 	const DEFAULT_ENDPOINT = 'http://localhost:3001/api/errors';
 
 	function uuidv4() {
@@ -34,6 +34,45 @@
 		if (/Mobi|Android/i.test(ua)) return 'mobile';
 		if (/Tablet|iPad/i.test(ua)) return 'tablet';
 		return 'desktop';
+	}
+
+	/**
+	 * Sanitize sensitive data from objects before sending to backend
+	 * @param {any} data - Data to sanitize
+	 * @param {number} depth - Current recursion depth
+	 * @returns {any} Sanitized data
+	 */
+	function sanitizeData(data, depth) {
+		depth = depth || 0;
+		var MAX_DEPTH = 10;
+		var SENSITIVE_KEYS = /^(password|passwd|pwd|secret|token|apikey|api_key|api-key|authorization|auth|credential|credit.?card|card.?number|cvv|cvc|ssn|social.?security|private.?key|access.?token|refresh.?token|bearer|session.?id|cookie)$/i;
+
+		// Prevent infinite recursion
+		if (depth > MAX_DEPTH) return '[MAX_DEPTH_EXCEEDED]';
+
+		// Handle null/undefined
+		if (data == null) return data;
+
+		// Handle primitives
+		if (typeof data !== 'object') return data;
+
+		// Handle arrays
+		if (Array.isArray(data)) {
+			return data.map(function (item) { return sanitizeData(item, depth + 1); });
+		}
+
+		// Handle objects
+		var sanitized = {};
+		var keys = Object.keys(data);
+		for (var i = 0; i < keys.length; i++) {
+			var key = keys[i];
+			if (SENSITIVE_KEYS.test(key)) {
+				sanitized[key] = '[REDACTED]';
+			} else {
+				sanitized[key] = sanitizeData(data[key], depth + 1);
+			}
+		}
+		return sanitized;
 	}
 
 	function send(payload, opts) {
@@ -70,6 +109,47 @@
 	const SnipLog = {
 		_opts: { endpoint: DEFAULT_ENDPOINT, projectKey: '' },
 		_sessionId: uuidv4(),
+
+		/**
+		 * Manually capture an error
+		 * @param {Error} error - The error object
+		 * @param {Object} metadata - Additional context
+		 */
+		captureError: function (error, metadata) {
+			metadata = metadata || {};
+			var payload = {
+				message: error.message || String(error),
+				stack: error.stack || '',
+				url: window.location.href,
+				browser: { userAgent: navigator.userAgent, platform: navigator.platform },
+				device: detectDevice(),
+				sessionId: this._sessionId,
+				metadata: sanitizeData(metadata),
+				ts: new Date().toISOString()
+			};
+			send(payload, this._opts);
+		},
+
+		/**
+		 * Capture a non-error message/event
+		 * @param {string} message - The message
+		 * @param {Object} metadata - Additional context
+		 */
+		captureMessage: function (message, metadata) {
+			metadata = metadata || {};
+			var payload = {
+				message: message,
+				stack: '',
+				url: window.location.href,
+				browser: { userAgent: navigator.userAgent, platform: navigator.platform },
+				device: detectDevice(),
+				sessionId: this._sessionId,
+				metadata: sanitizeData(metadata),
+				ts: new Date().toISOString()
+			};
+			send(payload, this._opts);
+		},
+
 		init: function (opts) {
 			this._opts = Object.assign({}, this._opts, opts || {});
 			// capture window.onerror
@@ -91,7 +171,7 @@
 							ts: new Date().toISOString()
 						};
 						send(payload, self._opts);
-					} catch (ignore) {}
+					} catch (ignore) { }
 				});
 
 				// unhandledrejection
@@ -109,7 +189,7 @@
 							ts: new Date().toISOString()
 						};
 						send(payload, self._opts);
-					} catch (ignore) {}
+					} catch (ignore) { }
 				});
 
 				// console.error wrapper (best-effort, does not break app)
@@ -129,11 +209,11 @@
 								ts: new Date().toISOString()
 							};
 							send(payload, self._opts);
-						} catch (ignore) {}
+						} catch (ignore) { }
 						// always call original
 						origConsoleError.apply(null, arguments);
 					};
-				} catch (ignore) {}
+				} catch (ignore) { }
 			}
 		}
 	};

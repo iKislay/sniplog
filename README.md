@@ -5,7 +5,7 @@ Enterprise-grade error tracking SDK for Node.js/Express backends and browser fro
 ## Installation
 
 ```bash
-npm install sniplog-sdk
+npm install sniplog
 ```
 
 ## Usage
@@ -16,7 +16,7 @@ npm install sniplog-sdk
 
 ```javascript
 const express = require('express');
-const SnipLog = require('sniplog-sdk');
+const SnipLog = require('sniplog');
 
 const app = express(); 
 
@@ -129,12 +129,12 @@ curl http://localhost:4000/test-error
 
 ---
 
-### Browser / Frontend (Coming Soon)
+### Browser / Frontend
 
 For frontend integration, include `browser.js` directly:
 
 ```html
-<script src="/path/to/sniplog-sdk/src/browser.js"></script>
+<script src="/path/to/sniplog/src/browser.js"></script>
 <script>
   SnipLog.init({
     endpoint: 'http://localhost:3000/api/errors',
@@ -276,7 +276,7 @@ npm link
 
 # Use in your project
 cd your-express-app
-npm link sniplog-sdk
+npm link sniplog
 ```
 
 ## Contributing
